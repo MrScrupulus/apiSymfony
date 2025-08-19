@@ -20,10 +20,12 @@ class Author
 
     #[ORM\Column(length: 255)]
     #[Groups(["getBook"])]
+    #[Assert\NotBlank(message: "Le prénom ne peut pas être vide")]
     private ?string $firstName = null;
 
     #[ORM\Column(length: 255)]
     #[Groups(["getBook"])]
+    #[Assert\NotBlank(message: "Le nom de famille ne peut pas être vide")]
     private ?string $lastName = null;
 
     /**

@@ -45,7 +45,7 @@ class ExceptionSubscriber implements EventSubscriberInterface
             ];
             $event->setResponse(new JsonResponse($data, $exception->getStatusCode()));
         }
-        // Gestion des autres exceptions (erreurs 500, erreurs de base de données, etc.)
+       
         else {
             $data = [
                 'status' => 500,

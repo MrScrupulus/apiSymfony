@@ -19,10 +19,12 @@ class Book
 
     #[ORM\Column(length: 255)]
     #[Groups(["getBook"])]
+    #[Assert\NotBlank(message: "Le titre du livre est obligatoire")]
     private ?string $title = null;
 
     #[ORM\Column(type: Types::TEXT)]
     #[Groups(["getBook"])]
+    #[Assert\NotBlank(message: "La description du livre est obligatoire")]
     private ?string $coverText = null;
 
     #[ORM\ManyToOne(inversedBy: 'Book')]
