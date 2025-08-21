@@ -16,13 +16,24 @@ use Symfony\Component\Serializer\SerializerInterface;
 use App\Repository\AuthorRepository;
 use Symfony\Component\Serializer\Normalizer\AbstractNormalizer;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
+use Symfony\Component\Security\Http\Attribute\IsGranted;
+use Symfony\Contracts\Cache\TagAwareCacheInterface;
+use Symfony\Contracts\Cache\ItemInterface;
 
 class BookController extends AbstractController
 {
-    #[Route('/api/book/', name: 'book', methods: ['GET'])]
-    public function getAllBook(BookRepository $bookRepository, SerializerInterface $serializer): JsonResponse
+    #[Route('/api/books', name: 'books', methods: ['GET'])]
+    public function getAllBook(BookRepository $bookRepository, SerializerInterface $serializer, Request $request, TagAwareCacheInterface $cachePool): JsonResponse
     {
-        $bookList = $bookRepository->findAll();
+        $page = $request->get('page', 1);
+        $limit = $request->get('limit', 3);
+        $idCache = "getAllBooks-" . $page . "-" . $limit;
+
+        $bookList = $cachePool->get($idCache, function (ItemInterface $item) use ($bookRepository, $page, $limit) {
+            $item->tag("booksCache");
+            return $bookRepository->findAllWithPagination($page, $limit);
+        });
+
         $jsonBookList = $serializer->serialize($bookList, 'json', ['groups' => 'getBook']);
         return new JsonResponse($jsonBookList, Response::HTTP_OK, [], true);
     }
@@ -49,13 +60,14 @@ class BookController extends AbstractController
         return new JsonResponse(null, Response::HTTP_NO_CONTENT);
     }
 
-    #[Route('/api/book', name: 'createBook', methods: ['POST'])]
+    #[Route('/api/books', name: 'createBook', methods: ['POST'])]
+    #[IsGranted('ROLE_ADMIN', message: 'Vous n\'avez pas les droits suffisants pour créer un livre')]
     public function createBook(Request $request, SerializerInterface $serializer, EntityManagerInterface $em, UrlGeneratorInterface $urlGenerator, AuthorRepository $authorRepository, ValidatorInterface $validator): JsonResponse
     {
         $book = $serializer->deserialize($request->getContent(), Book::class, 'json');
 
 
-        
+
         $errors = $validator->validate($book);
         if ($errors->count() > 0) {
             return new JsonResponse($serializer->serialize($errors, 'json'), Response::HTTP_BAD_REQUEST, [], true);
